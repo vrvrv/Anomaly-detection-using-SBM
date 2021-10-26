@@ -1,0 +1,48 @@
+# @package _global_
+
+# specify here default training configuration
+defaults:
+  - trainer: ddp.yaml
+  - model: ddpm.yaml
+  - datamodule: cifar10.yaml
+  - experiment: null
+
+  - hydra: default.yaml
+
+  # enable color logging
+  - override hydra/hydra_logging: colorlog
+  - override hydra/job_logging: colorlog
+
+work_dir: ${hydra:runtime.cwd}
+
+# path to folder with data
+data_dir: ${work_dir}/data/
+
+callbacks:
+  model_checkpoint:
+    _target_: pytorch_lightning.callbacks.ModelCheckpoint
+    monitor: "valid_loss"
+    save_top_k: 2
+    save_last: True
+    mode: "min"
+    dirpath: "checkpoints/"
+    filename: "sample-{epoch:02d}"
+  early_stopping:
+    _target_: pytorch_lightning.callbacks.EarlyStopping
+    monitor: "valid_loss"
+    patience: 10000
+    mode: "min"
+
+
+logger:
+  wandb:
+    _target_: pytorch_lightning.loggers.wandb.WandbLogger
+    project: "DGM-BO Final Project"
+    save_dir: "."
+    id: null # pass correct id to resume experiment!
+    log_model: False
+    tags: []
+
+debug: False
+print_config: True
+ignore_warnings: True
