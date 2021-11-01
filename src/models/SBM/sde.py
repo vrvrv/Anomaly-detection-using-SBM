@@ -44,7 +44,8 @@ class VPSDE(SDE):
             self,
             beta_0: float = 0.1,
             beta_1: float = 20,
-            N: int = 1000
+            N: int = 1000,
+            **kwargs
     ):
         super().__init__(N)
 
@@ -89,7 +90,8 @@ class subVPSDE(SDE):
             self,
             beta_0: float = 0.1,
             beta_1: float = 20,
-            N: int = 2000
+            N: int = 2000,
+            **kwargs
     ):
         super(subVPSDE, self).__init__(N)
 
@@ -123,7 +125,8 @@ class VESDE(SDE):
             self,
             sigma_0: float = 0.01,
             sigma_1: float = 50,
-            N: int = 1000
+            N: int = 1000,
+            **kwargs
     ):
         super(VESDE, self).__init__(N)
         self.sigma_0 = sigma_0
