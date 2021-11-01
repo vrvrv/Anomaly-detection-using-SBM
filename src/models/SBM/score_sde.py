@@ -13,9 +13,10 @@ class SCORE_SDE(pl.LightningModule):
             score_configs: dict,
             sde_configs: dict,
             lr: float,
-            weight_decay: float
+            weight_decay: float,
+            **kwargs
     ):
-        super(SCORE_SDE).__init__()
+        super(SCORE_SDE, self).__init__()
 
         self.save_hyperparameters()
 
@@ -33,7 +34,7 @@ class SCORE_SDE(pl.LightningModule):
         z = torch.randn_like(batch)
 
         mean, std = self.sde.marginal_prob(batch, t)
-        perturbed_data = mean + std * z
+        perturbed_data = mean + std[:, None, None, None] * z
         score = self.score(perturbed_data, t)
 
         # if not likelihood weighting

@@ -1,4 +1,4 @@
-_target_: src.models.SCORE_SDE
+_target_: src.models.SBM.SCORE_SDE
 
 # optimizer
 lr: 2e-4

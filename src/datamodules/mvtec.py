@@ -112,7 +112,6 @@ class MVTecDataModule(LightningDataModule):
         """Load data. Set variables: self.data_train, self.data_val, self.data_test."""
         self.trainset = MVTecDataset(self.data_dir, class_name=self.class_name, train=True, transform=self.transforms)
         self.testset = MVTecDataset(self.data_dir, class_name=self.class_name, train=False, transform=self.transforms)
-
         self.trainset, self.validset = random_split(
             self.trainset, self.train_valid_split
         )

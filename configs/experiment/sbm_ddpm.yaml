@@ -3,9 +3,9 @@
 seed: 12345
 
 defaults:
-  - override /trainer: ddp4.yaml
+  - override /trainer: default.yaml
   - override /model: sbm_ddpm.yaml
-  - override /datamodule: mvtec_cable.yaml
+  - override /datamodule: mvtec_bottle.yaml
 
 experiment_name: sbm_ddpm
 

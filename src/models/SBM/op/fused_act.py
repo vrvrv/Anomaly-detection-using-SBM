@@ -14,6 +14,7 @@ fused = load(
         os.path.join(module_path, "fused_bias_act.cpp"),
         os.path.join(module_path, "fused_bias_act_kernel.cu"),
     ],
+    verbose=True
 )
 
 
@@ -87,10 +88,10 @@ def fused_leaky_relu(input, bias, negative_slope=0.2, scale=2 ** 0.5):
     if input.device.type == "cpu":
         rest_dim = [1] * (input.ndim - bias.ndim - 1)
         return (
-            F.leaky_relu(
-                input + bias.view(1, bias.shape[0], *rest_dim), negative_slope=0.2
-            )
-            * scale
+                F.leaky_relu(
+                    input + bias.view(1, bias.shape[0], *rest_dim), negative_slope=0.2
+                )
+                * scale
         )
 
     else:
