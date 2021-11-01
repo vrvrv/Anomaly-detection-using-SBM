@@ -1,0 +1,11 @@
+_target_: data.datamodules.MVTecDataModule
+
+data_dir: ${work_dir}/data/mvtec
+class_name: cable
+
+batch_size: 32
+val_batch_size: 32
+num_workers: 1
+pin_memory: False
+
+train_valid_split: [180, 20]

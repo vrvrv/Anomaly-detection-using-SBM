@@ -1,0 +1,4 @@
+defaults:
+  - mvtec_default.yaml
+
+class_name: cable

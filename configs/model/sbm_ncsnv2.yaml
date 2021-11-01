@@ -1,0 +1,4 @@
+defaults:
+  - sbm_default.yaml
+
+sde: subVPSDE # VPSDE, VESDE
