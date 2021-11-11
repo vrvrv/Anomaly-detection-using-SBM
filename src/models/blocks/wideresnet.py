@@ -9,7 +9,7 @@ def get_timestep_embedding(timestamps, d_model):
     assert d_model % 2 == 0
     half_dim = d_model // 2
 
-    emb = torch.arange(half_dim, dtype=torch.float) / half_dim * math.log(10000)
+    emb = torch.arange(half_dim, dtype=torch.float, device=timestamps.device) / half_dim * math.log(10000)
     emb = torch.exp(-emb)
 
     emb = timestamps.float()[:, None] * emb[None, :]
@@ -175,11 +175,10 @@ class ResBlock(nn.Module):
 
 
 class WideResnet(nn.Module):
-    def __init__(self, T, ch, ch_mult, attn, num_res_blocks, dropout):
+    def __init__(self, ch, ch_mult, attn, num_res_blocks, dropout):
         super().__init__()
         assert all([i < len(ch_mult) for i in attn]), 'attn index out of bound'
-        self.ch = ch
-        tdim = ch * 4
+        self.tdim = ch * 4
 
         self.head = nn.Conv2d(3, ch, kernel_size=3, stride=1, padding=1)
         self.downblocks = nn.ModuleList()
@@ -189,7 +188,7 @@ class WideResnet(nn.Module):
             out_ch = ch * mult
             for _ in range(num_res_blocks):
                 self.downblocks.append(ResBlock(
-                    in_ch=now_ch, out_ch=out_ch, tdim=tdim,
+                    in_ch=now_ch, out_ch=out_ch, tdim=self.tdim,
                     dropout=dropout, attn=(i in attn)))
                 now_ch = out_ch
                 chs.append(now_ch)
@@ -198,8 +197,8 @@ class WideResnet(nn.Module):
                 chs.append(now_ch)
 
         self.middleblocks = nn.ModuleList([
-            ResBlock(now_ch, now_ch, tdim, dropout, attn=True),
-            ResBlock(now_ch, now_ch, tdim, dropout, attn=False),
+            ResBlock(now_ch, now_ch, self.tdim, dropout, attn=True),
+            ResBlock(now_ch, now_ch, self.tdim, dropout, attn=False),
         ])
 
         self.upblocks = nn.ModuleList()
@@ -207,8 +206,9 @@ class WideResnet(nn.Module):
             out_ch = ch * mult
             for _ in range(num_res_blocks + 1):
                 self.upblocks.append(ResBlock(
-                    in_ch=chs.pop() + now_ch, out_ch=out_ch, tdim=tdim,
-                    dropout=dropout, attn=(i in attn)))
+                    in_ch=chs.pop() + now_ch, out_ch=out_ch, tdim=self.tdim,
+                    dropout=dropout, attn=(i in attn))
+                )
                 now_ch = out_ch
             if i != 0:
                 self.upblocks.append(UpSample(now_ch))
@@ -229,7 +229,7 @@ class WideResnet(nn.Module):
 
     def forward(self, x, t):
         # Timestep embedding
-        temb = get_timestep_embedding(t, self.ch)
+        temb = get_timestep_embedding(t, self.tdim)
         # Downsampling
         h = self.head(x)
         hs = [h]

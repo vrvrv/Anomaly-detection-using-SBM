@@ -1,0 +1,5 @@
+defaults:
+  - default.yaml
+
+gpus: 2
+accelerator: ddp

@@ -83,6 +83,7 @@ class MVTecDataModule(LightningDataModule):
             self,
             data_dir: str,
             class_name: str,
+            img_size: int,
             train_valid_split: Tuple[int, int],
             batch_size: int,
             num_workers: int,
@@ -92,13 +93,14 @@ class MVTecDataModule(LightningDataModule):
 
         self.data_dir = data_dir
         self.class_name = class_name
+        self.img_size = img_size
         self.train_valid_split = train_valid_split
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.pin_memory = pin_memory
 
         self.transforms = transforms.Compose([
-            transforms.Resize((256, 256), Image.ANTIALIAS),
+            transforms.Resize((img_size, img_size), Image.ANTIALIAS),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.ConvertImageDtype(torch.float)

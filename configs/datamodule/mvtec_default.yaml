@@ -2,7 +2,8 @@ _target_: src.datamodules.MVTecDataModule
 
 data_dir: ${work_dir}/data/mvtec
 class_name: cable
+img_size: 128
 
-batch_size: 32
-num_workers: 1
+batch_size: 16
+num_workers: 4
 pin_memory: False

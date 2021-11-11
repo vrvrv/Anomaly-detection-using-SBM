@@ -3,8 +3,7 @@ defaults:
 
 score_configs:
   model_name: 'ddpm'
-  T: 1000
-  ch: 128
+  ch: 64
   ch_mult: [1, 2, 2, 2]
   attn: [1]
   num_res_blocks: 2
@@ -13,5 +12,11 @@ score_configs:
 sde_configs:
   sde_name: 'subVPSDE'
   beta_0: 0.1
+  beta_1: 20
+  N: 2000
+
+sampler_configs:
+  snr: 'subVPSDE'
+  n_steps: 0.1
   beta_1: 20
   N: 2000

@@ -1,9 +1,4 @@
 from typing import List, Sequence
-# from src.models.SBM.layers import (
-#     DDPM,
-#     NCSNv2,
-#     NCSNpp
-# )
 from src.models.SBM.sde import (
     VPSDE,
     subVPSDE,
@@ -13,6 +8,7 @@ from src.models.blocks import (
     RefineNet,
     WideResnet
 )
+from src.models.SBM.sampling import get_sampling_fn
 
 model_dict = {
     'ddpm': WideResnet,
@@ -25,10 +21,15 @@ sde_dict = {
     'vesde': VESDE
 }
 
+sampling_eps_dict = {
+    'vpsde': 1e-3,
+    'subvpsde': 1e-3,
+    'vesde': 1e-5
+}
+
 
 def get_model(
         model_name: str,
-        T: int,
         ch: int,
         ch_mult: List[int],
         attn: List[int],
@@ -38,7 +39,6 @@ def get_model(
 ):
     model = model_dict[model_name.lower()](
         ## DDPM ##
-        T=T,
         ch=ch,
         ch_mult=ch_mult,
         attn=attn,
@@ -66,4 +66,35 @@ def get_sde(
         N=N
     )
 
-    return sde
+    sampling_eps = sampling_eps_dict[sde_name.lower()]
+
+    return sde, sampling_eps
+
+
+def get_sampling_fn(
+        predictor_name: str,
+        corrector_name: str,
+        sde,
+        shape,
+        sampling_eps: float,
+        snr,
+        n_steps,
+        probability_flow,
+        continuous,
+        denoise,
+        device,
+        **kwargs
+):
+    sampler = get_sampling_fn(
+        predictor_name=predictor_name,
+        corrector_name=corrector_name,
+        sde=sde,
+        shape=shape,
+        eps=sampling_eps,
+        snr=snr,
+        n_steps=n_steps,
+        continuous=continuous,
+        denoise=denoise,
+        device=device,
+    )
+    return sampler

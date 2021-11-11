@@ -3,7 +3,7 @@
 seed: 12345
 
 defaults:
-  - override /trainer: default.yaml
+  - override /trainer: ddp4.yaml
   - override /model: sbm_ddpm.yaml
   - override /datamodule: mvtec_bottle.yaml
 
