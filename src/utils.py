@@ -114,13 +114,12 @@ def finish(
     datamodule: pl.LightningDataModule,
     trainer: pl.Trainer,
     callbacks: List[pl.Callback],
-    logger: List[pl.loggers.LightningLoggerBase],
+    logger: pl.loggers.LightningLoggerBase,
 ) -> None:
     """Makes sure everything closed properly."""
 
     # without this sweeps with wandb logger might crash!
-    for lg in logger:
-        if isinstance(lg, pl.loggers.wandb.WandbLogger):
-            import wandb
+    if isinstance(logger, pl.loggers.wandb.WandbLogger):
+        import wandb
 
-            wandb.finish()
+        wandb.finish()

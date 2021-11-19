@@ -1,5 +1,4 @@
 defaults:
   - default.yaml
 
-gpus: -1
-strategy: ddp
+sde: subVPSDE # VPSDE, VESDE

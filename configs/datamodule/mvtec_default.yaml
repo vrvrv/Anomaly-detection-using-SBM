@@ -1,0 +1,10 @@
+_target_: src.datamodules.MVTecDataModule
+
+name: mvtec
+
+data_dir: ${work_dir}/data
+img_size: 64
+
+batch_size: 16
+num_workers: 4
+pin_memory: True

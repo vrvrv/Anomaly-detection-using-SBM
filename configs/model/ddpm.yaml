@@ -1,0 +1,24 @@
+defaults:
+  - default.yaml
+
+score_configs:
+  model_name: 'ddpm'
+  ch: 128
+  ch_mult: [1, 2, 2, 2]
+  attn: [1]
+  num_res_blocks: 6
+  dropout: 0.1
+
+sde_configs:
+  sde_name: 'subVPSDE'
+  beta_0: 0.1
+  beta_1: 20
+  N: 2000
+
+sampler_configs:
+  predictor_name: 'euler-maruyama'
+  corrector_name: 'none'
+  snr: 'subVPSDE'
+  n_steps: 1
+  beta_1: 20
+  noise_removal: True

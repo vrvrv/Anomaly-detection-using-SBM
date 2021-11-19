@@ -1,0 +1,6 @@
+tensorflow-gan==2.0.0
+tensorflow_io
+tensorflow_datasets==3.1.0
+tensorflow==2.4.0
+tensorflow-addons==0.12.0
+tensorboard==2.4.0

@@ -28,6 +28,7 @@ def train(config: DictConfig) -> Optional[float]:
     """
 
     # Set seed for random number generators in pytorch, numpy and python.random
+
     if "seed" in config:
         seed_everything(config.seed, workers=True)
 
@@ -37,7 +38,10 @@ def train(config: DictConfig) -> Optional[float]:
 
     # Init lightning model
     log.info(f"Instantiating model <{config.model._target_}>")
-    model: LightningModule = hydra.utils.instantiate(config.model)
+    model: LightningModule = hydra.utils.instantiate(
+        config.model,
+        img_size=config.datamodule.img_size
+    )
 
     # Init lightning callbacks
     callbacks: List[Callback] = []
@@ -48,12 +52,8 @@ def train(config: DictConfig) -> Optional[float]:
                 callbacks.append(hydra.utils.instantiate(cb_conf))
 
     # Init lightning loggers
-    logger: List[LightningLoggerBase] = []
-    if "logger" in config:
-        for _, lg_conf in config.logger.items():
-            if "_target_" in lg_conf:
-                log.info(f"Instantiating logger <{lg_conf._target_}>")
-                logger.append(hydra.utils.instantiate(lg_conf))
+    log.info(f"Instantiating logger <{config.logger._target_}>")
+    logger = hydra.utils.instantiate(config.logger)
 
     # Init lightning trainer
     log.info(f"Instantiating trainer <{config.trainer._target_}>")

@@ -2,7 +2,7 @@
 
 # specify here default training configuration
 defaults:
-  - trainer: ddp.yaml
+  - trainer: default.yaml
   - model: ddpm.yaml
   - datamodule: cifar10.yaml
   - experiment: null
@@ -35,14 +35,20 @@ callbacks:
 
 
 logger:
-  wandb:
-    _target_: pytorch_lightning.loggers.wandb.WandbLogger
-    project: "DGM-BO Final Project"
-    save_dir: "."
-    id: null # pass correct id to resume experiment!
-    log_model: False
-    tags: []
+  _target_: pytorch_lightning.loggers.wandb.WandbLogger
+  project: "Anomaly detection based on SCORE SDE"
+  save_dir: "."
+  name: ${datamodule.name}_${model.score_configs.model_name}_${model.sde_configs.sde_name}
+  tags: [
+      "${datamodule.name}",
+      "${model.score_configs.model_name}",
+      "${model.sde_configs.sde_name}",
+      "${model.sampler_configs.predictor_name}",
+      "${model.sampler_configs.corrector_name}"
+  ]
 
 debug: False
 print_config: True
 ignore_warnings: True
+
+enable_model_summary: Tru3e
