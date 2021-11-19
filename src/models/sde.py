@@ -69,7 +69,7 @@ class SDE(abc.ABC):
         discretize_fn = self.discretize
 
         # Build the class for reverse-time SDE.
-        class RSDE(self.__class__):
+        class ReverseSDE(self.__class__):
             def __init__(self):
                 self.N = N
 
@@ -89,7 +89,7 @@ class SDE(abc.ABC):
                 rev_f = f - G[:, None, None, None] ** 2 * score_fn(x, t)
                 return rev_f, G
 
-        return RSDE()
+        return ReverseSDE()
 
 
 class VPSDE(SDE):

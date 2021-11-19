@@ -1,0 +1,18 @@
+# @package _global_
+
+seed: 12345
+
+defaults:
+  - override /trainer: ddp.yaml
+  - override /model: ddpm.yaml
+  - override /datamodule: cifar10.yaml
+
+model:
+  log_image_period: 20
+
+datamodule:
+  batch_size: 128
+
+logger:
+  job_type: train
+

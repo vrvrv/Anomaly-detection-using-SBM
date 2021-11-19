@@ -4,12 +4,11 @@ seed: 12345
 
 defaults:
   - override /trainer: ddp4.yaml
-  - override /model: sbm_ddpm.yaml
+  - override /model: SBM/sbm_ncsnpp.yaml
   - override /datamodule: mvtec_bottle.yaml
 
-experiment_name: sbm_ddpm
+experiment_name: sbm_ncsnpp
 
 logger:
-  wandb:
-    name: ${experiment_name}
-    job_type: train
+  job_type: train
+

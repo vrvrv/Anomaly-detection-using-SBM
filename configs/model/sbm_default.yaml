@@ -1,8 +1,0 @@
-_target_: src.models.SBM.SCORE_SDE
-
-# optimizer
-lr: 2e-4
-weight_decay: 0
-
-# Sampling
-sample_size: 64

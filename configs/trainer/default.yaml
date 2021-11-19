@@ -6,5 +6,7 @@ gpus: 0
 max_steps: 800000
 min_steps: 500000
 
+gradient_clip_val: 1
+
 weights_summary: null
 progress_bar_refresh_rate: 5

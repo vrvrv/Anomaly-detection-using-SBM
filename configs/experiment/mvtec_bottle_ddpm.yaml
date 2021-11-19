@@ -1,0 +1,18 @@
+# @package _global_
+
+seed: 12345
+
+defaults:
+  - override /trainer: ddp.yaml
+  - override /model: ddpm.yaml
+  - override /datamodule: mvtec_bottle.yaml
+
+model:
+  log_image_period: 100
+
+datamodule:
+  batch_size: 32
+
+logger:
+  job_type: train
+

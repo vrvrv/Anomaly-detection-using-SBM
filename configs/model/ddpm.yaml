@@ -1,12 +1,12 @@
 defaults:
-  - sbm_default.yaml
+  - default.yaml
 
 score_configs:
   model_name: 'ddpm'
-  ch: 64
+  ch: 128
   ch_mult: [1, 2, 2, 2]
   attn: [1]
-  num_res_blocks: 2
+  num_res_blocks: 6
   dropout: 0.1
 
 sde_configs:
@@ -16,7 +16,9 @@ sde_configs:
   N: 2000
 
 sampler_configs:
+  predictor_name: 'euler-maruyama'
+  corrector_name: 'none'
   snr: 'subVPSDE'
-  n_steps: 0.1
+  n_steps: 1
   beta_1: 20
-  N: 2000
+  noise_removal: True

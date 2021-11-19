@@ -1,10 +1,11 @@
 import os
 import torch
 
+from src.datamodules import DataModule
+
 from PIL import Image
 from typing import Optional, Callable, Tuple
 
-from pytorch_lightning import LightningDataModule
 from torch.utils.data import ConcatDataset, DataLoader, Dataset, random_split
 from torchvision.transforms import transforms
 
@@ -78,9 +79,10 @@ class MVTecDataset(Dataset):
         return list(x), list(y)
 
 
-class MVTecDataModule(LightningDataModule):
+class MVTecDataModule(DataModule):
     def __init__(
             self,
+            name:str,
             data_dir: str,
             class_name: str,
             img_size: int,
@@ -89,59 +91,21 @@ class MVTecDataModule(LightningDataModule):
             num_workers: int,
             pin_memory: bool,
     ):
-        super().__init__()
-
-        self.data_dir = data_dir
-        self.class_name = class_name
-        self.img_size = img_size
-        self.train_valid_split = train_valid_split
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        self.pin_memory = pin_memory
-
-        self.transforms = transforms.Compose([
-            transforms.Resize((img_size, img_size), Image.ANTIALIAS),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.ConvertImageDtype(torch.float)
-        ])
-
-        self.data_train: Optional[Dataset] = None
-        self.data_val: Optional[Dataset] = None
-        self.data_test: Optional[Dataset] = None
+        super().__init__(
+            name=name,
+            data_dir=data_dir,
+            class_name=class_name,
+            img_size=img_size,
+            train_valid_split=train_valid_split,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            pin_memory=pin_memory
+        )
 
     def setup(self, stage: Optional[str] = None):
         """Load data. Set variables: self.data_train, self.data_val, self.data_test."""
-        self.trainset = MVTecDataset(self.data_dir, class_name=self.class_name, train=True, transform=self.transforms)
-        self.testset = MVTecDataset(self.data_dir, class_name=self.class_name, train=False, transform=self.transforms)
+        self.trainset = MVTecDataset(self.dataset_dir, class_name=self.hparams.class_name, train=True, transform=self.transforms)
+        self.testset = MVTecDataset(self.dataset_dir, class_name=self.hparams.class_name, train=False, transform=self.transforms)
         self.trainset, self.validset = random_split(
-            self.trainset, self.train_valid_split
-        )
-
-    def train_dataloader(self):
-        return DataLoader(
-            dataset=self.trainset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            pin_memory=self.pin_memory,
-            shuffle=True,
-            drop_last=True
-        )
-
-    def val_dataloader(self):
-        return DataLoader(
-            dataset=self.validset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            pin_memory=self.pin_memory,
-            shuffle=False,
-        )
-
-    def test_dataloader(self):
-        return DataLoader(
-            dataset=self.testset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            pin_memory=self.pin_memory,
-            shuffle=False,
+            self.trainset, self.hparams.train_valid_split
         )

@@ -1,12 +1,10 @@
 import copy
-import wandb
 import torch
 import torch.optim as optim
 import pytorch_lightning as pl
 from torchvision.utils import make_grid
 
 import src.models.utils as mutils
-from src.models.SBM import *
 
 
 class SCORE_SDE(pl.LightningModule):
@@ -18,6 +16,7 @@ class SCORE_SDE(pl.LightningModule):
             lr: float,
             weight_decay: float,
             img_size: int,
+            log_image_period: int,
             **kwargs
     ):
         super(SCORE_SDE, self).__init__()
@@ -40,14 +39,17 @@ class SCORE_SDE(pl.LightningModule):
             **sampler_configs
         )
 
-    def denoise(self):
-        samples, n = self.sampler(
-            score_model=self.score
+        self.register_buffer(
+            "noise", torch.randn((36, 3, img_size, img_size))
         )
-        pass
+
+    def denoise(self, noise):
+        return self.sampler(
+            model=self.score, noise=noise
+        )
 
     def shared_step(self, batch):
-        t = torch.rand(len(batch), device=self.device)
+        t = torch.rand(len(batch), device=self.device) * (self.sde.T - 1e-5) + 1e-5
         z = torch.randn_like(batch)
 
         mean, std = self.sde.marginal_prob(batch, t)
@@ -76,12 +78,12 @@ class SCORE_SDE(pl.LightningModule):
 
     @pl.utilities.rank_zero_only
     def on_validation_epoch_end(self) -> None:
-        outs = self.denoise(self.noise)
+        if self.current_epoch + 1 % self.hparams.log_image_period == 0:
+            outs = self.denoise(self.noise)
 
-        caption = "Generated images"
-        self.logger.experiment[0].log(
-            {"val/generated_images": [wandb.Image(make_grid(outs, nrow=6, normalize=True), caption=caption)]}
-        )
+            self.logger.log_image(
+                key="Generated images", images=[make_grid(outs, nrow=6, normalize=True)]
+            )
 
     def configure_optimizers(self):
         optimizer = optim.Adam(

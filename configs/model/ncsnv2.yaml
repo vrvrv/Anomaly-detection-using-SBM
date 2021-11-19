@@ -1,5 +1,4 @@
 defaults:
   - default.yaml
 
-gpus: 4
-accelerator: ddp
+sde: subVPSDE # VPSDE, VESDE

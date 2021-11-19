@@ -1,0 +1,11 @@
+_target_: src.datamodules.CIFAR10DataModule
+
+name: cifar10
+data_dir: ${work_dir}/data/${datamodule.name}
+
+img_size: 32
+batch_size: 128
+num_workers: 8
+pin_memory: True
+
+train_valid_split: [ 45000, 5000 ]

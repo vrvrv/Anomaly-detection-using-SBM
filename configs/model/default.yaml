@@ -1,0 +1,9 @@
+_target_: src.models.SCORE_SDE
+
+# optimizer
+lr: 2e-4
+weight_decay: 0
+
+# Sampling
+sample_size: 64
+log_image_period: 100

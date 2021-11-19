@@ -5,11 +5,13 @@ import functools
 import numpy as np
 import src.models.utils as mutils
 
-from .sde import (
+from src.models.sde import (
     VPSDE,
     subVPSDE,
     VESDE
 )
+from tqdm import tqdm
+
 
 def shared_predictor_update_fn(x, t, sde, model, predictor):
     """A wrapper that configures and returns the update function of predictors."""
@@ -22,7 +24,7 @@ def shared_predictor_update_fn(x, t, sde, model, predictor):
     return predictor_obj.update_fn(x, t)
 
 
-def shared_corrector_update_fn(x, t, sde, model, corrector, continuous, snr, n_steps):
+def shared_corrector_update_fn(x, t, sde, model, corrector, snr, n_steps):
     """A wrapper tha configures and returns the update function of correctors."""
     score_fn = mutils.get_score_fn(sde, model, train=False)
     if corrector is None:
@@ -31,65 +33,6 @@ def shared_corrector_update_fn(x, t, sde, model, corrector, continuous, snr, n_s
     else:
         corrector_obj = corrector(sde, score_fn, snr, n_steps)
     return corrector_obj.update_fn(x, t)
-
-
-def get_sampling_fn(
-        predictor_name: str,
-        corrector_name: str,
-        sde,
-        shape,
-        inverse_scaler,
-        eps: float,
-        snr,
-        n_steps,
-        continuous,
-        denoise,
-        device,
-        **kwargs
-):
-    predictor = predictor_dict[predictor_name.lower()](
-        kwargs
-    )
-    corrector = predictor_dict[corrector_name.lower()](
-        kwargs
-    )
-
-    # Create predictor & corrector update functions
-    predictor_update_fn = functools.partial(
-        shared_predictor_update_fn,
-        sde=sde,
-        predictor=predictor,
-        continuous=continuous
-    )
-    corrector_update_fn = functools.partial(
-        shared_corrector_update_fn,
-        sde=sde,
-        corrector=corrector,
-        continuous=continuous,
-        snr=snr,
-        n_steps=n_steps
-    )
-
-    def pc_sampler(model):
-        """ The PC sampler function
-
-        Args:
-            model: A score model
-        Returns:
-            Samples, number of function evaluations
-        """
-        with torch.no_grad():
-            x = sde.prior_sampling(shape).to(device)
-            timesteps = torch.linspace(sde.T, eps, sde.N, device=device)
-
-            for i, t in enumerate(timesteps):
-                vec_t = torch.ones(shape[0], device=device) * t
-                x, x_mean = corrector_update_fn(x, vec_t, model=model)
-                x, x_mean = predictor_update_fn(x, vec_t, model=model)
-
-        return inverse_scaler(x_mean if denoise else x), sde.N * (n_steps + 1)
-
-    return pc_sampler
 
 
 class Predictor(abc.ABC):
@@ -278,8 +221,6 @@ class AnnealedLangevinDynamics(Corrector):
 
 
 class NoneCorrector(Corrector):
-    """An empty corrector that does nothing."""
-
     def __init__(self, sde, score_fn, snr, n_steps):
         pass
 
@@ -299,3 +240,60 @@ corrector_dict = {
     'annealed-langevin': AnnealedLangevinDynamics,
     'none': NoneCorrector
 }
+
+
+def sampling_fn(
+        predictor_name: str,
+        corrector_name: str,
+        sde,
+        shape,
+        eps: float,
+        snr,
+        n_steps,
+        noise_removal,
+        **kwargs
+):
+    predictor = predictor_dict[predictor_name.lower()]
+    corrector = corrector_dict[corrector_name.lower()]
+
+    # Create predictor & corrector update functions
+    predictor_update_fn = functools.partial(
+        shared_predictor_update_fn,
+        sde=sde,
+        predictor=predictor,
+    )
+    corrector_update_fn = functools.partial(
+        shared_corrector_update_fn,
+        sde=sde,
+        corrector=corrector,
+        snr=snr,
+        n_steps=n_steps
+    )
+
+    def pc_sampler(model, noise):
+        """ The PC sampler function
+
+        Args0:
+            model: A score model
+        Returns:
+            Samples, number of function evaluations
+        """
+        with torch.no_grad():
+            x = noise
+
+            pbar = tqdm(
+                torch.linspace(sde.T, eps, sde.N, device=noise.device),
+                desc='Predictor-Corrector Sampling',
+                total=sde.N,
+                leave=False,
+                miniters=10
+            )
+
+            for i, t in enumerate(pbar):
+                vec_t = torch.ones(shape[0], device=noise.device) * t
+                x, x_mean = corrector_update_fn(x, vec_t, model=model)
+                x, x_mean = predictor_update_fn(x, vec_t, model=model)
+
+        return x_mean
+
+    return pc_sampler
