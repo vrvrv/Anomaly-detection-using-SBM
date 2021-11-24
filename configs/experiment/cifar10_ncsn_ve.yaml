@@ -4,14 +4,14 @@ seed: 12345
 
 defaults:
   - override /trainer: ddp.yaml
-  - override /model: ddpm.yaml
-  - override /datamodule: mvtec_bottle.yaml
+  - override /model: ncsn.yaml
+  - override /datamodule: cifar10.yaml
 
 model:
-  log_image_period: 100
+  log_image_period: 20
 
 datamodule:
-  batch_size: 32
+  batch_size: 128
 
 logger:
   job_type: train

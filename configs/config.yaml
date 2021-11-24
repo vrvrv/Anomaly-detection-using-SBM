@@ -30,9 +30,8 @@ callbacks:
   early_stopping:
     _target_: pytorch_lightning.callbacks.EarlyStopping
     monitor: "valid_loss"
-    patience: 10000
+    patience: 500
     mode: "min"
-
 
 logger:
   _target_: pytorch_lightning.loggers.wandb.WandbLogger
@@ -43,12 +42,13 @@ logger:
       "${datamodule.name}",
       "${model.score_configs.model_name}",
       "${model.sde_configs.sde_name}",
-      "${model.sampler_configs.predictor_name}",
-      "${model.sampler_configs.corrector_name}"
+      "P:${model.sampler_configs.predictor_name}",
+      "C:${model.sampler_configs.corrector_name}"
   ]
 
 debug: False
 print_config: True
 ignore_warnings: True
 
-enable_model_summary: Tru3e
+enable_model_summary: True
+test_after_training: True

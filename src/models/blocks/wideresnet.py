@@ -19,10 +19,6 @@ def get_timestep_embedding(timestamps, d_model):
     return emb
 
 
-class Swish(nn.Module):
-    def forward(self, x):
-        return x * torch.sigmoid(x)
-
 
 class TimeEmbedding(nn.Module):
     def __init__(self, T, d_model, dim):
@@ -41,7 +37,7 @@ class TimeEmbedding(nn.Module):
         self.timembedding = nn.Sequential(
             nn.Embedding.from_pretrained(emb),
             nn.Linear(d_model, dim),
-            Swish(),
+            nn.SiLU(),
             nn.Linear(dim, dim),
         )
         self.initialize()
@@ -134,16 +130,16 @@ class ResBlock(nn.Module):
         super().__init__()
         self.block1 = nn.Sequential(
             nn.GroupNorm(32, in_ch),
-            Swish(),
+            nn.SiLU(),
             nn.Conv2d(in_ch, out_ch, 3, stride=1, padding=1),
         )
         self.temb_proj = nn.Sequential(
-            Swish(),
+            nn.SiLU(),
             nn.Linear(tdim, out_ch),
         )
         self.block2 = nn.Sequential(
             nn.GroupNorm(32, out_ch),
-            Swish(),
+            nn.SiLU(),
             nn.Dropout(dropout),
             nn.Conv2d(out_ch, out_ch, 3, stride=1, padding=1),
         )
@@ -216,7 +212,7 @@ class WideResnet(nn.Module):
 
         self.tail = nn.Sequential(
             nn.GroupNorm(32, now_ch),
-            Swish(),
+            nn.SiLU(),
             nn.Conv2d(now_ch, 3, 3, stride=1, padding=1)
         )
         self.initialize()
