@@ -55,7 +55,7 @@ class SDE(abc.ABC):
         G = diffusion * torch.sqrt(torch.tensor(dt, device=t.device))
         return f, G
 
-    def reverse(self, score_fn):
+    def reverse(self, score_fn, probability_flow=False):
         """
         Create the reverse-time SDE/ODE
 
@@ -72,6 +72,7 @@ class SDE(abc.ABC):
         class ReverseSDE(self.__class__):
             def __init__(self):
                 self.N = N
+                self.probability_flow = probability_flow
 
             @property
             def T(self):
@@ -80,14 +81,17 @@ class SDE(abc.ABC):
             def sde(self, x, t):
                 drift, diffusion = sde_fn(x, t)
                 score = score_fn(x, t)
-                drift = drift - diffusion[:, None, None, None] ** 2 - 2 * score
+                drift = drift - diffusion[:, None, None, None] ** 2 * score * (0.5 if self.probability_flow else 1.)
+                # Set the diffusion function to zero for ODEs.
+                diffusion = 0. if self.probability_flow else diffusion
                 return drift, diffusion
 
             def discretize(self, x, t):
                 """Create discretized iteration rules for the reverse diffusion sampler."""
                 f, G = discretize_fn(x, t)
-                rev_f = f - G[:, None, None, None] ** 2 * score_fn(x, t)
-                return rev_f, G
+                rev_f = f - G[:, None, None, None] ** 2 * score_fn(x, t) * (0.5 if self.probability_flow else 1.)
+                rev_G = torch.zeros_like(G) if self.probability_flow else G
+                return rev_f, rev_G
 
         return ReverseSDE()
 
@@ -104,7 +108,6 @@ class VPSDE(SDE):
 
         self.beta_0 = beta_0
         self.beta_1 = beta_1
-
         self.N = N
         self.discrete_betas = torch.linspace(beta_0 / N, beta_1 / N, N)
         self.alphas = 1. - self.discrete_betas
@@ -120,7 +123,6 @@ class VPSDE(SDE):
         beta_t = self.beta_0 + t * (self.beta_1 - self.beta_0)
         drift = - .5 * beta_t[:, None, None, None] * x
         diffusion = torch.sqrt(beta_t)
-
         return drift, diffusion
 
     def marginal_prob(self, x, t):
@@ -156,13 +158,14 @@ class subVPSDE(SDE):
             self,
             beta_0: float = 0.1,
             beta_1: float = 20,
-            N: int = 2000,
+            N: int = 1000,
             **kwargs
     ):
         super(subVPSDE, self).__init__(N)
 
         self.beta_0 = beta_0
         self.beta_1 = beta_1
+        self.N = N
 
     @property
     def T(self):
@@ -204,6 +207,7 @@ class VESDE(SDE):
         self.discrete_sigmas = torch.exp(
             torch.linspace(np.log(self.sigma_0), np.log(self.sigma_1), N)
         )
+        self.N = N
 
     @property
     def T(self):

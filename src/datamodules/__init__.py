@@ -36,7 +36,7 @@ class DataModule(LightningDataModule):
 
         self.trainset: Optional[Dataset] = None
         self.validset: Optional[Dataset] = None
-        self.trainset: Optional[Dataset] = None
+        self.testset: Optional[Dataset] = None
 
     def train_dataloader(self):
         return DataLoader(
@@ -58,10 +58,10 @@ class DataModule(LightningDataModule):
 
     def test_dataloader(self):
         return DataLoader(
-            dataset=self.hparams.testset,
+            dataset=self.testset,
             batch_size=self.hparams.batch_size,
-            num_workers=self.hparams.num_workers,
-            pin_memory=self.hparams.pin_memory,
+            num_workers=1,
+            pin_memory=False,
             shuffle=False,
         )
 

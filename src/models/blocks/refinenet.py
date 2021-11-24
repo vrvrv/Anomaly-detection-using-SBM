@@ -280,16 +280,15 @@ class ConditionalInstanceNorm2dPlus(nn.Module):
 
 
 class RefineNet(nn.Module):
-    def __init__(self, in_channel, ngf: int = 128, num_classes: int = 10):
+    def __init__(self, ngf: int = 128, num_classes: int = 10):
         super().__init__()
-        self.logit_transform = False
         self.ngf = ngf
         self.num_classes = num_classes
-        self.act = nn.ELU()
+        self.act = nn.SiLU()
 
-        self.begin_conv = nn.Conv2d(in_channel, ngf, 3, stride=1, padding=1)
+        self.begin_conv = nn.Conv2d(3, ngf, 3, stride=1, padding=1)
         self.normalizer = ConditionalInstanceNorm2dPlus(ngf, num_classes)
-        self.end_conv = nn.Conv2d(ngf, in_channel, 3, stride=1, padding=1)
+        self.end_conv = nn.Conv2d(ngf, 3, 3, stride=1, padding=1)
 
         self.block1 = nn.Sequential(
             ConditionalResidualBlock(ngf, ngf, num_classes, resample=None),

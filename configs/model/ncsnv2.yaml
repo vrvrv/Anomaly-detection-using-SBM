@@ -1,4 +1,0 @@
-defaults:
-  - default.yaml
-
-sde: subVPSDE # VPSDE, VESDE

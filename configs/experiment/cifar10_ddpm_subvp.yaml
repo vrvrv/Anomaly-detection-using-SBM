@@ -8,7 +8,9 @@ defaults:
   - override /datamodule: cifar10.yaml
 
 model:
-  log_image_period: 20
+  log_image_period: 10
+#trainer:
+#  resume_from_checkpoint: ${work_dir}/logs/runs/2021-11-24/13-43-29/checkpoints/sample-epoch=30.ckpt
 
 datamodule:
   batch_size: 128
