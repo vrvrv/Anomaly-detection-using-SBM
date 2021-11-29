@@ -2,4 +2,4 @@ defaults:
   - mvtec_default.yaml
 
 class_name: bottle
-train_valid_split: [ 180, 29 ]
+train_valid_split: [ 189, 20 ]

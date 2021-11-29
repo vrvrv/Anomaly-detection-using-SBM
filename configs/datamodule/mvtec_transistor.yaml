@@ -1,0 +1,5 @@
+defaults:
+  - mvtec_default.yaml
+
+class_name: transistor
+train_valid_split: [ 192, 21 ]

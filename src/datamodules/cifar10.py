@@ -8,16 +8,15 @@ from torchvision.datasets import CIFAR10
 class CIFAR10DataModule(DataModule):
     def __init__(
             self,
-            name: str,
             data_dir: str,
             img_size: int,
             train_valid_split: Tuple[int, int],
             batch_size: int,
             num_workers: int,
             pin_memory: bool,
+            **kwargs
     ):
         super().__init__(
-            name=name,
             data_dir=data_dir,
             img_size=img_size,
             train_valid_split=train_valid_split,

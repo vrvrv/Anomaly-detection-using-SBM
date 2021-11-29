@@ -3,3 +3,4 @@ defaults:
 
 gpus: -1
 strategy: ddp
+auto_select_gpus: True

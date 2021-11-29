@@ -1,0 +1,22 @@
+_target_: src.models.AutoEncoder
+
+model_name: 'autoencoder'
+
+# optimizer
+lr: 2e-4
+
+# Encoder
+encoder_conf:
+  channels: [64, 128, 256, 512]
+  kernel_sizes: [5, 5, 5, 4]
+  strides: [2, 2, 2, 2]
+  hidden_dims: [512, 128, 32]
+
+# Decoder
+decoder_conf:
+  channels: [512, 256, 128, 64]
+  kernel_sizes: [5, 5, 6, 6]
+  strides: [2, 2, 2, 2]
+  hidden_dims: [32, 128, 512]
+
+log_image_period: 10

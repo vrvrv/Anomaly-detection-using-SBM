@@ -1,5 +1,7 @@
 _target_: src.models.SCORE_SDE
 
+model_name: 'sbm'
+
 # optimizer
 lr: 2e-4
 weight_decay: 0

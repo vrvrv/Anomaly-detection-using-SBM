@@ -21,3 +21,5 @@ sampler_configs:
   snr: 'subVPSDE'
   n_steps: 1
   noise_removal: True
+
+delta: 0.1

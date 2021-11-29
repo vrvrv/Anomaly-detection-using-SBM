@@ -64,7 +64,6 @@ class MVTecDataset(Dataset):
 
         if phase == 'train':
             img_type, label = 'good', 0
-
             x, y = self.load_img_list(x, y, img_dir, img_type, label)
 
         elif phase == 'test':
@@ -82,7 +81,6 @@ class MVTecDataset(Dataset):
 class MVTecDataModule(DataModule):
     def __init__(
             self,
-            name:str,
             data_dir: str,
             class_name: str,
             img_size: int,
@@ -90,9 +88,9 @@ class MVTecDataModule(DataModule):
             batch_size: int,
             num_workers: int,
             pin_memory: bool,
+            **kwargs
     ):
         super().__init__(
-            name=name,
             data_dir=data_dir,
             class_name=class_name,
             img_size=img_size,
@@ -104,8 +102,8 @@ class MVTecDataModule(DataModule):
 
     def setup(self, stage: Optional[str] = None):
         """Load data. Set variables: self.data_train, self.data_val, self.data_test."""
-        self.trainset = MVTecDataset(self.dataset_dir, class_name=self.hparams.class_name, train=True, transform=self.transforms)
-        self.testset = MVTecDataset(self.dataset_dir, class_name=self.hparams.class_name, train=False, transform=self.transforms)
+        self.trainset = MVTecDataset(self.hparams.data_dir, class_name=self.hparams.class_name, train=True, transform=self.transforms)
+        self.testset = MVTecDataset(self.hparams.data_dir, class_name=self.hparams.class_name, train=False, transform=self.transforms)
         self.trainset, self.validset = random_split(
             self.trainset, self.hparams.train_valid_split
         )

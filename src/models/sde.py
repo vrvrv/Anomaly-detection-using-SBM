@@ -27,7 +27,7 @@ class SDE(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def prior_logp(self, z):
+    def prior_logp(self, z, mask=None):
         """
         Compute log-density of the prior distribution.
         Useful for computing the log-likelihood via probability flow ODE.
@@ -134,13 +134,17 @@ class VPSDE(SDE):
     def prior_sampling(self, shape):
         return torch.randn(*shape)
 
-    def prior_logp(self, z):
+    def prior_logp(self, z, mask=None):
         """
         z : batch_size x d1 x ... x dM
         N = d1 * d2 * ... * dM
         """
-        N = np.prod(z.shape[1:])
-        logps = -N / 2. * np.log(2 * np.pi) - torch.sum(z ** 2, dim=(1, 2, 3)) / 2.
+        if mask is None:
+            mask = torch.ones_like(z)
+
+        N = 3 * mask.sum(tuple(range(1, len(mask.shape))))
+        logps = - N / 2. * np.log(2 * np.pi) - torch.sum((z * mask) ** 2, dim=(1, 2, 3)) / 2.
+
         return logps
 
     def discretize(self, x, t):
@@ -187,10 +191,13 @@ class subVPSDE(SDE):
     def prior_sampling(self, shape):
         return torch.randn(*shape)
 
-    def prior_logp(self, z):
-        shape = z.shape
-        N = np.prod(shape[1:])
-        return -N / 2. * np.log(2 * np.pi) - torch.sum(z ** 2, dim=(1, 2, 3)) / 2.
+    def prior_logp(self, z, mask=None):
+        if mask is None:
+            mask = torch.ones_like(z)
+
+        N = 3 * mask.sum(tuple(range(1, len(mask.shape))))
+
+        return - N / 2. * np.log(2 * np.pi) - torch.sum((z * mask) ** 2, dim=(1, 2, 3)) / 2.
 
 
 class VESDE(SDE):
@@ -232,10 +239,14 @@ class VESDE(SDE):
     def prior_sampling(self, shape):
         return torch.randn(*shape) * self.sigma_1
 
-    def prior_logp(self, z):
-        N = np.prod(z.shape[1:])
-        return -N / 2. * np.log(2 * np.pi * self.sigma_1 ** 2) \
-               - torch.sum(z ** 2, dim=(1, 2, 3)) / (2 * self.sigma_1 ** 2)
+    def prior_logp(self, z, mask=None):
+        if mask is None:
+            mask = torch.ones_like(z)
+
+        N = 3 * mask.sum(tuple(range(1, len(mask.shape))))
+
+        return - N / 2. * np.log(2 * np.pi * self.sigma_1 ** 2) \
+               - torch.sum((z * mask) ** 2, dim=(1, 2, 3)) / (2 * self.sigma_1 ** 2)
 
     def discretize(self, x, t):
         """SMLD(NCSN) discretization."""

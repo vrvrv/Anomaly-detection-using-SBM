@@ -1,0 +1,5 @@
+defaults:
+  - mvtec_default.yaml
+
+class_name: screw
+train_valid_split: [ 288, 32 ]

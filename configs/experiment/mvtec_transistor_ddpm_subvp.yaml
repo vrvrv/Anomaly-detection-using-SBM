@@ -5,11 +5,10 @@ seed: 12345
 defaults:
   - override /trainer: ddp.yaml
   - override /model: ddpm.yaml
-  - override /datamodule: mvtec_bottle.yaml
+  - override /datamodule: mvtec_transistor.yaml
 
 model:
   log_image_period: 50
-  auto_encoder_ckpt: ${work_dir}/logs/runs/2021-11-26/10-26-13/checkpoints/sample-epoch=2909.ckpt
 
 datamodule:
   batch_size: 48
@@ -21,5 +20,4 @@ trainer:
   max_epochs: 5000
   min_epochs: 1000
   check_val_every_n_epoch: 10
-  resume_from_checkpoint: ${work_dir}/logs/runs/2021-11-25/21-36-43/checkpoints/sample-epoch=4039.ckpt
 
