@@ -1,0 +1,5 @@
+defaults:
+  - mvtec_default.yaml
+
+class_name: leather
+train_valid_split: [ 220, 25 ]

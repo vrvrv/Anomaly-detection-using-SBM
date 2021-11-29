@@ -270,20 +270,31 @@ def sampling_fn(
         n_steps=n_steps
     )
 
-    def pc_sampler(model, device):
+    def pc_sampler(model, device, init=None, t=None):
         """ The PC sampler function
         Args0:
             model: A score model
         Returns:
             Samples, number of function evaluations
         """
+
         with torch.no_grad():
-            x = sde.prior_sampling(shape).to(device)
+            if init is None:
+                x = sde.prior_sampling(shape).to(device)
+            else:
+                x = init
+
+            if t is None:
+                t = sde.T
+                n = sde.N
+            else:
+                t = t
+                n = int(sde.N / sde.T * t)
 
             pbar = tqdm(
-                torch.linspace(sde.T, eps, sde.N, device=device),
+                torch.linspace(t, eps, n, device=device),
                 desc='Predictor-Corrector Sampling',
-                total=sde.N,
+                total=n,
                 leave=False,
                 miniters=10
             )
@@ -292,6 +303,8 @@ def sampling_fn(
                 vec_t = torch.ones(shape[0], device=device) * t
                 x, x_mean = corrector_update_fn(x, vec_t, model=model)
                 x, x_mean = predictor_update_fn(x, vec_t, model=model)
+
+                x = torch.clip(x, -1, 1)
 
         return x_mean
 

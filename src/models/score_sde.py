@@ -3,16 +3,10 @@ import torch
 import torch.optim as optim
 import pytorch_lightning as pl
 from torchvision.utils import make_grid
-from torchmetrics import AUROC, PrecisionRecallCurve
+from torchmetrics import AUROC
 
-from src.likelihood import get_likelihood_fn
 import src.models.utils as mutils
-
-from src.models.sde import (
-    VPSDE,
-    subVPSDE,
-    VESDE
-)
+from src.likelihood import get_likelihood_fn
 
 
 class SCORE_SDE(pl.LightningModule):
@@ -34,30 +28,43 @@ class SCORE_SDE(pl.LightningModule):
         self.model = mutils.get_model(
             **score_configs
         )
-        self.ema_model = copy.deepcopy(self.model)
+        self.ema_model = copy.deepcopy(self.model).requires_grad_(False)
 
-        self.sde, sampling_eps = mutils.get_sde(
+        self.sde, self.sampling_eps = mutils.get_sde(
             **sde_configs
         )
 
         self.sampler = mutils.get_sampling_fn(
             sde=self.sde,
             shape=(36, 3, img_size, img_size),
-            sampling_eps=sampling_eps,
+            sampling_eps=self.sampling_eps,
             **sampler_configs
         )
 
-    def denoise(self):
-        return self.sampler(
-            model=self.model, device=self.device
+    def perturb_data(self, batch, t):
+        z = torch.randn_like(batch)
+        mean, std = self.sde.marginal_prob(batch, t)
+        perturbed_data = mean + std[:, None, None, None] * z
+        return perturbed_data, std, z
+
+    def denoise(self, batch, t):
+
+        sampler = mutils.get_sampling_fn(
+            sde=self.sde,
+            shape=(len(batch), 3, self.hparams.img_size, self.hparams.img_size),
+            sampling_eps=self.sampling_eps,
+            **self.hparams.sampler_configs
+        )
+
+        vec_t = torch.ones(batch.shape[0], device=batch.device) * t
+        perturbed_data, _, _ = self.perturb_data(batch, vec_t)
+        return sampler(
+            model=self.model, device=self.device, init=perturbed_data, t=t
         )
 
     def shared_step(self, batch):
         t = torch.rand(len(batch), device=self.device) * (self.sde.T - 1e-5) + 1e-5
-        z = torch.randn_like(batch)
-
-        mean, std = self.sde.marginal_prob(batch, t)
-        perturbed_data = mean + std[:, None, None, None] * z
+        perturbed_data, std, z = self.perturb_data(batch, t)
 
         score_fn = mutils.get_score_fn(self.sde, self.model, train=True)
         score = score_fn(perturbed_data, t)
@@ -86,29 +93,52 @@ class SCORE_SDE(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         X, y = batch
 
-        bpd = self.likelihood(model=self.model, data=X)
+        X_recon = self.denoise(X, t=0.1)
+        err = torch.abs(X - X_recon).mean(dim=1, keepdim=True)
 
-        return bpd, y
+        shape = err.shape
+
+        err_flatten = err.reshape(shape[0], -1)
+
+        mask = (err_flatten < err_flatten.quantile(self.hparams.delta, dim=1, keepdim=True)).reshape(shape).float()
+
+        bpd = self.likelihood(model=self.model, data=X)
+        c_bpd = self.likelihood(
+            model=self.model,
+            data=X,
+            mask=mask
+        )
+
+        return bpd, c_bpd, y
 
     def test_epoch_end(self, outputs) -> None:
         bpd = []
+        c_bpd = []
         y = []
 
-        for bpd_i, y_i in outputs:
+        for bpd_i, c_bpd_i, y_i in outputs:
             bpd.append(bpd_i)
+            c_bpd.append(c_bpd_i)
             y.append(y_i)
 
         bpd = torch.cat(bpd)
+        c_bpd = torch.cat(c_bpd)
         y = torch.cat(y)
 
+        # anomalous / non-anomalous data label : 1 / 0
+        # bpd and c_bpd is likelihood -> larger for non-anomalous data
         auroc = AUROC(num_classes=2, pos_label=0)
 
-        self.log("AUROC", auroc(bpd, y), logger=True)
+        self.log("AUROC_unconditioned", auroc(bpd, y), logger=True)
+        self.log("AUROC_conditioned", auroc(c_bpd, y), logger=True)
 
     @pl.utilities.rank_zero_only
     def on_validation_epoch_end(self) -> None:
         if (self.current_epoch + 1) % self.hparams.log_image_period == 0:
-            outs = self.denoise()
+            outs = self.sampler(
+                model=self.model, device=self.device
+            )
+
             self.logger.log_image(
                 key="Generated images", images=[make_grid(outs, nrow=6, normalize=True)]
             )

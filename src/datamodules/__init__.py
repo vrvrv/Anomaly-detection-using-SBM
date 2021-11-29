@@ -11,7 +11,6 @@ from torchvision.transforms import transforms
 class DataModule(LightningDataModule):
     def __init__(
             self,
-            name: str,
             data_dir: str,
             img_size: int,
             train_valid_split: Tuple[int, int],
@@ -23,8 +22,6 @@ class DataModule(LightningDataModule):
         super().__init__()
 
         self.save_hyperparameters()
-
-        self.dataset_dir = os.path.join(data_dir, name)
 
         self.transforms = transforms.Compose([
             transforms.Resize((self.hparams.img_size, self.hparams.img_size), Image.ANTIALIAS),
@@ -60,7 +57,7 @@ class DataModule(LightningDataModule):
         return DataLoader(
             dataset=self.testset,
             batch_size=self.hparams.batch_size,
-            num_workers=1,
+            num_workers=4,
             pin_memory=False,
             shuffle=False,
         )

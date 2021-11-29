@@ -1,0 +1,23 @@
+# @package _global_
+
+seed: 12345
+
+defaults:
+  - override /trainer: ddp.yaml
+  - override /model: ddpm.yaml
+  - override /datamodule: mvtec_carpet.yaml
+
+model:
+  log_image_period: 50
+
+datamodule:
+  batch_size: 48
+
+logger:
+  job_type: train
+
+trainer:
+  max_epochs: 5000
+  min_epochs: 500
+  check_val_every_n_epoch: 10
+

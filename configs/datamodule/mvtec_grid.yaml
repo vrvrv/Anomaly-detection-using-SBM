@@ -1,0 +1,5 @@
+defaults:
+  - mvtec_default.yaml
+
+class_name: grid
+train_valid_split: [ 238, 26 ]

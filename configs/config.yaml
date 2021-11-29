@@ -16,7 +16,7 @@ defaults:
 work_dir: ${hydra:runtime.cwd}
 
 # path to folder with data
-data_dir: ${work_dir}/data/
+data_dir: ${work_dir}/mvtec_anomaly_detection/
 
 callbacks:
   model_checkpoint:
@@ -37,13 +37,9 @@ logger:
   _target_: pytorch_lightning.loggers.wandb.WandbLogger
   project: "Anomaly detection based on SCORE SDE"
   save_dir: "."
-  name: ${datamodule.name}_${model.score_configs.model_name}_${model.sde_configs.sde_name}
+  name: ${datamodule.name}_${datamodule.class_name}
   tags: [
-      "${datamodule.name}",
-      "${model.score_configs.model_name}",
-      "${model.sde_configs.sde_name}",
-      "P:${model.sampler_configs.predictor_name}",
-      "C:${model.sampler_configs.corrector_name}"
+      "${datamodule.name}", "${model.model_name}"
   ]
 
 debug: False
@@ -51,4 +47,4 @@ print_config: True
 ignore_warnings: True
 
 enable_model_summary: True
-test_after_training: True
+test_after_training: False

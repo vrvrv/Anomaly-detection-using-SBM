@@ -1,0 +1,5 @@
+defaults:
+  - mvtec_default.yaml
+
+class_name: wood
+train_valid_split: [ 222, 25 ]

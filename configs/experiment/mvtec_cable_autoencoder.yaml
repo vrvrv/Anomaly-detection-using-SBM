@@ -1,0 +1,22 @@
+# @package _global_
+
+seed: 12345
+
+defaults:
+  - override /trainer: ddp.yaml
+  - override /model: auto_encoder.yaml
+  - override /datamodule: mvtec_cable.yaml
+
+model:
+  log_image_period: 10
+
+datamodule:
+  batch_size: 48
+  pin_memory: False
+
+logger:
+  job_type: train
+
+trainer:
+  max_epochs: 5000
+  min_epochs: 1000

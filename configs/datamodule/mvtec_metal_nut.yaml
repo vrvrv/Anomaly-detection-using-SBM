@@ -1,0 +1,5 @@
+defaults:
+  - mvtec_default.yaml
+
+class_name: metal_nut
+train_valid_split: [ 198, 22 ]

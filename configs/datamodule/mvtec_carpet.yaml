@@ -1,0 +1,5 @@
+defaults:
+  - mvtec_default.yaml
+
+class_name: carpet
+train_valid_split: [ 252, 28 ]
