@@ -31,6 +31,12 @@ class DataModule(LightningDataModule):
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
 
+        self.transforms_mask = transforms.Compose([
+            transforms.Resize((self.hparams.img_size, self.hparams.img_size), Image.ANTIALIAS),
+            transforms.ToTensor(),
+            transforms.ConvertImageDtype(torch.float),
+        ])
+
         self.trainset: Optional[Dataset] = None
         self.validset: Optional[Dataset] = None
         self.testset: Optional[Dataset] = None

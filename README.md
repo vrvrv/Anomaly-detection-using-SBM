@@ -1,4 +1,7 @@
-# DGM_BO_Final
+# Anomaly detection using Score based generative model
+
+[slides](https://www.overleaf.com/read/zjwnhhmwnqdt)
+[checkpoints]()
 
 ## Get Started
 ### Download `MvTec` data
@@ -9,13 +12,19 @@ tar Jxvf mvtec_anomaly_detection.tar.xz
 
 ## Train
 You can find configuration files at [here](configs/experiment).
+Also, we provide pretrained weights from [here](https://www.dropbox.com/sh/dut2fypgx3igpq2/AABY6y66eVZTIb4XbekjVV1Ja?dl=0).
+Please save the checkpoints at [checkpoints] directory.
 
-### Score SDE
+### Training score SDE
 ```bash
-python train.py experiment=mvtec_capsule_ddpm_subvp
+python train.py experiment=capsule_64
 ```
+The above code starts training from the prescribed checkpoints. If you want to train the model from scratch,
+comment out the line `resume_from_checkpoint: ...` in `YAML` configuration file.
 
 ## Test
 ```bash
-python test.py experiment=mvtec_capsule_ddpm_subvp trainer.gpus=1
+python test.py experiment=capsule_64
 ```
+
+This computes the likelihood and within-image conditional likelihood of test dataset.

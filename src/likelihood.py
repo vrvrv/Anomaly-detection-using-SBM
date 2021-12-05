@@ -17,6 +17,8 @@ def get_div_fn(fn):
         return torch.sum(grad_fn_eps * eps, dim=tuple(range(1, len(x.shape))))
 
     return div_fn
+
+
 #
 #
 # def get_likelihood_fn2(
@@ -118,7 +120,7 @@ def get_likelihood_fn(
             grad_fn_eps = torch.autograd.grad(fn_eps, x)[0] * (1. - mask)
         x.requires_grad_(False)
 
-        return (grad_fn_eps * eps).sum(dim=tuple(range(1, len(x.shape))))
+        return (grad_fn_eps * eps).sum(dim=tuple(range(1, x.dim())))
 
     def likelihood_fn(model, data: torch.Tensor, mask: torch.Tensor = None):
         """
@@ -128,18 +130,30 @@ def get_likelihood_fn(
         Here, mask = 1 when error is smaller than delta
         """
 
+        if hutchinson_type == 'Gaussian':
+            epsilon = torch.randn_like(data)
+        elif hutchinson_type == 'Rademacher':
+            epsilon = torch.randint_like(data, low=0, high=2).float() * 2 - 1.
+        else:
+            raise NotImplementedError(f"Hutchinson type {hutchinson_type} unknown.")
+
+        shape = data.shape
+
+        if mask is None:
+            mask = torch.zeros_like(data)
+
         class ODE_Func(nn.Module):
             def __init__(self, batch_size):
                 super().__init__()
                 self.batch_size = batch_size
 
             def forward(self, t, x):
-                sample = x[:-shape[0]].reshape(shape).type(torch.float32)
+                sample = x[:-self.batch_size].reshape(shape).type(torch.float32)
                 vec_t = torch.ones(self.batch_size, device=x.device) * t
 
-                masked_data_mean, std = sde.marginal_prob(sample, vec_t)
-                # masked_data = masked_data_mean + torch.randn_like(masked_data_mean) * std[:, None, None, None]
-                masked_data = masked_data_mean
+                masked_data_mean, std = sde.marginal_prob(data, vec_t)
+                masked_data = masked_data_mean + torch.randn_like(masked_data_mean) * std[:, None, None, None]
+                #masked_data = masked_data_mean
 
                 sample = sample * (1. - mask) + masked_data * mask
 
@@ -148,33 +162,21 @@ def get_likelihood_fn(
 
                 return torch.cat([drift, logp_grad], dim=0)
 
-        with torch.no_grad():
+        data_flatten = data.reshape((-1,))
 
-            shape = data.shape
+        init = torch.cat([data_flatten, torch.zeros((shape[0],), device=data.device)], dim=0)
+        solution = odeint(
+            ODE_Func(shape[0]).to(data.device), init, torch.linspace(eps, sde.T, 1000).to(data.device),
+            rtol=rtol,
+            atol=atol,
+            method='dopri5'
+        )
 
-            if mask is None:
-                mask = torch.zeros_like(data)
+        z0, zf = solution[[0, -1]]
 
-            if hutchinson_type == 'Gaussian':
-                epsilon = torch.randn_like(data)
-            elif hutchinson_type == 'Rademacher':
-                epsilon = torch.randint_like(data, low=0, high=2).float() * 2 - 1.
-            else:
-                raise NotImplementedError(f"Hutchinson type {hutchinson_type} unknown.")
+        delta_logp = zf[-shape[0]:].reshape(shape[0], )
+        prior_logp = sde.prior_logp(z0[:-shape[0]].reshape(shape), mask=1. - mask)
 
-            data_flatten = data.reshape((-1,))
-
-            init = torch.cat([data_flatten, torch.zeros((shape[0],), device=data.device)], dim=0)
-            solution = odeint(ODE_Func(shape[0]).to(data.device), init, torch.linspace(eps, sde.T, 200).to(data.device), rtol=rtol, atol=atol, method='dopri5')
-
-            zp = solution[-1]
-            z = zp[:-shape[0]].reshape(shape)
-
-            delta_logp = zp[-shape[0]:].reshape(shape[0], )
-            prior_logp = sde.prior_logp(z, mask = 1. - mask)
-
-            bpd = (prior_logp + delta_logp) / (np.log(2) * 3 * (1. - mask).sum(tuple(range(1, len(mask.shape)))))
-
-            return bpd
+        return prior_logp + delta_logp
 
     return likelihood_fn

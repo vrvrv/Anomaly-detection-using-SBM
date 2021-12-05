@@ -142,7 +142,7 @@ class VPSDE(SDE):
         if mask is None:
             mask = torch.ones_like(z)
 
-        N = 3 * mask.sum(tuple(range(1, len(mask.shape))))
+        N = 3 * mask.sum(tuple(range(1, mask.dim())))
         logps = - N / 2. * np.log(2 * np.pi) - torch.sum((z * mask) ** 2, dim=(1, 2, 3)) / 2.
 
         return logps

@@ -27,8 +27,12 @@ class CIFAR10DataModule(DataModule):
 
     def setup(self, stage: Optional[str] = None):
         """Load data. Set variables: self.data_train, self.data_val, self.data_test."""
-        self.trainset = CIFAR10(self.hparams.data_dir, train=True, transform=self.transforms)
-        self.testset = CIFAR10(self.hparams.data_dir, train=False, transform=self.transforms)
-        self.trainset, self.validset = random_split(
-            self.trainset, self.hparams.train_valid_split
-        )
+
+        if stage == 'fit' or stage is None:
+            self.trainset = CIFAR10(self.hparams.data_dir, train=True, transform=self.transforms)
+            self.trainset, self.validset = random_split(
+                self.trainset, self.hparams.train_valid_split
+            )
+
+        if stage == 'test' or stage is None:
+            self.testset = CIFAR10(self.hparams.data_dir, train=False, transform=self.transforms)

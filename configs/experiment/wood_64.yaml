@@ -5,11 +5,11 @@ seed: 12345
 defaults:
   - override /trainer: ddp.yaml
   - override /model: ddpm.yaml
-  - override /datamodule: mvtec_capsule.yaml
+  - override /datamodule: mvtec_wood.yaml
 
 model:
   log_image_period: 50
-  delta: 0.5
+  err_quantile: 0.8
 
 datamodule:
   batch_size: 48
@@ -21,5 +21,5 @@ trainer:
   max_epochs: 5000
   min_epochs: 500
   check_val_every_n_epoch: 10
-  resume_from_checkpoint: ${work_dir}/logs/runs/2021-11-29/13-17-18/checkpoints/sample-epoch=339.ckpt
+  resume_from_checkpoint: ${work_dir}/checkpoints/wood_64.ckpt
 

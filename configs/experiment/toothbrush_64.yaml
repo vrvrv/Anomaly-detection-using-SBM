@@ -5,10 +5,12 @@ seed: 12345
 defaults:
   - override /trainer: ddp.yaml
   - override /model: ddpm.yaml
-  - override /datamodule: mvtec_metal_nut.yaml
+  - override /datamodule: mvtec_toothbrush.yaml
 
 model:
   log_image_period: 50
+  on_black_background: True
+  err_quantile: 0.8
 
 datamodule:
   batch_size: 48
@@ -20,4 +22,5 @@ trainer:
   max_epochs: 5000
   min_epochs: 1000
   check_val_every_n_epoch: 10
+  resume_from_checkpoint: ${work_dir}/checkpoints/toothbrush_64.ckpt
 

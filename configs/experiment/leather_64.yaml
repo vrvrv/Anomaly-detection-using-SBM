@@ -5,10 +5,11 @@ seed: 12345
 defaults:
   - override /trainer: ddp.yaml
   - override /model: ddpm.yaml
-  - override /datamodule: mvtec_toothbrush.yaml
+  - override /datamodule: mvtec_leather.yaml
 
 model:
   log_image_period: 50
+  err_quantile: 0.8
 
 datamodule:
   batch_size: 48
@@ -20,4 +21,5 @@ trainer:
   max_epochs: 5000
   min_epochs: 1000
   check_val_every_n_epoch: 10
+  resume_from_checkpoint: ${work_dir}/checkpoints/leather_64.ckpt
 
