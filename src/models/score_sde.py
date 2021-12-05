@@ -1,4 +1,5 @@
 import copy
+import wandb
 import torch
 import torch.optim as optim
 import pytorch_lightning as pl
@@ -7,6 +8,16 @@ from torchmetrics import AUROC
 
 import src.models.utils as mutils
 from src.likelihood import get_likelihood_fn
+
+
+def precision(score, label, topk=1, pos_label=0):
+    _, sorted_idx = torch.sort(score)
+    return (label == pos_label)[sorted_idx[-topk:]].float().mean()
+
+
+def recall(score, label, topk=1, pos_label=0):
+    _, sorted_idx = torch.sort(score)
+    return (label[sorted_idx[-topk:]] == pos_label).float().sum() / (label == pos_label).float().sum()
 
 
 class SCORE_SDE(pl.LightningModule):
@@ -91,67 +102,97 @@ class SCORE_SDE(pl.LightningModule):
         self.likelihood_fn = get_likelihood_fn(sde=self.sde)
 
     def test_step(self, batch, batch_idx):
-        X, y = batch
+        X, mask, y = batch
 
-        X_recon = self.denoise(X, t=0.2)
+        X_recon = self.denoise(X, t=0.15)
+
+        if self.hparams.on_white_background:
+            white_background = (X > 0.8).float()
+            X_recon = X * white_background + (1. - white_background) * X_recon
+
+        if self.hparams.on_black_background:
+            black_background = (X < -0.8).float()
+            X_recon = X * black_background + (1. - black_background) * X_recon
+
         err = torch.square(X - X_recon).mean(dim=1, keepdim=True)
-
         shape = err.shape
-
         err_flatten = err.reshape(shape[0], -1)
 
-        mask_02 = (err_flatten < err_flatten.quantile(0.2, dim=1, keepdim=True)).reshape(shape).float()
-        mask_05 = (err_flatten < err_flatten.quantile(0.5, dim=1, keepdim=True)).reshape(shape).float()
-        mask_08 = (err_flatten < err_flatten.quantile(0.8, dim=1, keepdim=True)).reshape(shape).float()
+        mask = (err_flatten <= err_flatten.quantile(self.hparams.err_quantile, dim=1, keepdim=True)).reshape(
+            shape).float()
+
+        self.logger.log_image(
+            "Reconstruction",
+            images=[torch.cat([x, x_recon, m.repeat(3, 1, 1)], dim=1) for x, x_recon, m in zip(X, X_recon, mask)]
+        )
 
         bpd = self.likelihood_fn(model=self.model, data=X)
-        c_bpd_02 = self.likelihood_fn(
+        c_bpd = self.likelihood_fn(
             model=self.model,
             data=X,
-            mask=mask_02
-        )
-        c_bpd_05 = self.likelihood_fn(
-            model=self.model,
-            data=X,
-            mask=mask_05
-        )
-        c_bpd_08 = self.likelihood_fn(
-            model=self.model,
-            data=X,
-            mask=mask_08
+            mask=mask
         )
 
-        return bpd, c_bpd_02, c_bpd_05, c_bpd_08, y
+        err = err.mean(dim=(1, 2, 3))
+
+        return X, bpd, c_bpd, err, y
 
     def test_epoch_end(self, outputs) -> None:
+        images = []
         bpd = []
-        c_bpd_02 = []
-        c_bpd_05 = []
-        c_bpd_08 = []
-        y = []
+        c_bpd = []
+        err = []
+        label = []
 
-        for bpd_i, c_bpd_02_i, c_bpd_05_i, c_bpd_08_i, y_i in outputs:
+        for X, bpd_i, c_bpd_i, err_i, y_i in outputs:
+            images.append(X)
             bpd.append(bpd_i)
-            c_bpd_02.append(c_bpd_02_i)
-            c_bpd_05.append(c_bpd_05_i)
-            c_bpd_08.append(c_bpd_08_i)
-            y.append(y_i)
+            c_bpd.append(c_bpd_i)
+            err.append(err_i)
+            label.append(y_i)
 
+        images = torch.cat(images)
         bpd = torch.cat(bpd)
-        c_bpd_02 = torch.cat(c_bpd_02)
-        c_bpd_05 = torch.cat(c_bpd_05)
-        c_bpd_08 = torch.cat(c_bpd_08)
-        y = torch.cat(y)
+        c_bpd = torch.cat(c_bpd)
+        err = torch.cat(err)
+        label = torch.cat(label)
 
         # anomalous / non-anomalous data label : 1 / 0
         # bpd and c_bpd is likelihood -> larger for non-anomalous data
+        # err is error -> smaller for non-anomalous data
         auroc = AUROC(num_classes=2, pos_label=0)
 
-        self.log("AUROC_unconditioned", auroc(bpd, y), logger=True)
-        self.log("AUROC_conditioned_delta=0.2", auroc(c_bpd_02, y), logger=True)
-        self.log("AUROC_conditioned_delta=0.5", auroc(c_bpd_05, y), logger=True)
-        self.log("AUROC_conditioned_delta=0.8", auroc(c_bpd_08, y), logger=True)
+        self.log("AUROC_unconditioned", auroc(bpd, label), logger=True)
+        self.log("AUROC_conditioned", auroc(c_bpd, label), logger=True)
+        self.log("AUROC_recon_err", auroc(-err, label), logger=True)
 
+        # self.log("P@5_unconditioned", precision(bpd, label, topk=5, pos_label=0), logger=True)
+        # self.log("R@5_unconditioned", recall(bpd, label, topk=5, pos_label=0), logger=True)
+        #
+        # self.log("P@5_conditioned", precision(c_bpd, label, topk=5, pos_label=0), logger=True)
+        # self.log("R@5_conditioned", recall(c_bpd, label, topk=5, pos_label=0), logger=True)
+
+
+
+        # bpd and c_bpd is likelihood -> larger for non-anomalous data
+        auroc = AUROC(num_classes=2, pos_label=0)
+
+        self.log("AUROC_unconditioned", auroc(bpd, label), logger=True)
+        self.log("AUROC_conditioned", auroc(c_bpd, label), logger=True)
+
+        self.log("P@5_unconditioned", precision(bpd, label, topk=5, pos_label=0), logger=True)
+        self.log("R@5_unconditioned", recall(bpd, label, topk=5, pos_label=0), logger=True)
+
+        self.log("P@5_conditioned", precision(c_bpd, label, topk=5, pos_label=0), logger=True)
+        self.log("R@5_conditioned", recall(c_bpd, label, topk=5, pos_label=0), logger=True)
+
+        self.logger.log_table(
+            key="result",
+            columns=["image", "full_loglikelihood", "cond_loglikelihood", "label"],
+            data=[[wandb.Image(x), ll, cll, y] for x, ll, cll, y in zip(images, bpd, c_bpd, label)]
+        )
+        # self.log("AUROC_conditioned_delta=0.5", auroc(c_bpd_05, y), logger=True)
+        # self.log("AUROC_conditioned_delta=0.8", auroc(c_bpd_08, y), logger=True)
 
     @pl.utilities.rank_zero_only
     def on_validation_epoch_end(self) -> None:

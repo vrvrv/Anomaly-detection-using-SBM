@@ -306,6 +306,6 @@ def sampling_fn(
 
                 x = torch.clip(x, -1, 1)
 
-        return x_mean
+        return torch.clip(x_mean, -1, 1)
 
     return pc_sampler

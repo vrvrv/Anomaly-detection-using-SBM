@@ -21,3 +21,7 @@ sampler_configs:
   snr: 'subVPSDE'
   n_steps: 1
   noise_removal: True
+
+on_white_background: False
+on_black_background: False
+err_quantile: 0.2

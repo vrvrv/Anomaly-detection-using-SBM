@@ -2,4 +2,4 @@ defaults:
   - mvtec_default.yaml
 
 class_name: tile
-train_valid_split: [ 217, 23 ]
+train_valid_split: [ 207, 23 ]
