@@ -17,10 +17,9 @@ pip install -r requirements.txt
 
 [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) is a dataset for benchmarking anomaly detection methods with a focus on industrial inspection.
 It contains over 5000 high-resolution images divided into fifteen different object and texture categories.
-Each category comprises a set of defect-free training images and a test set of images with various kinds of defects as well as images without defects.
 
 ```bash
-wget https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1
+wget https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094/mvtec_anomaly_detection.tar.xz
 tar Jxvf mvtec_anomaly_detection.tar.xz
 ```
 
