@@ -1,8 +1,8 @@
 # Anomaly detection using Score based generative model
 
-Author: [Jinhwan Suk](https://github.com/vrvrv), [Jihyeong Jung](https://github.com/JhngJng)
+Authors: [Jinhwan Suk](https://github.com/vrvrv), [Jihyeong Jung](https://github.com/JhngJng)
 
-[Presentation slides](https://www.overleaf.com/read/zjwnhhmwnqdt)
+[Video](https://youtu.be/AxmfQoNdIso), [Slides](https://www.overleaf.com/read/zjwnhhmwnqdt)
 
 ## Get Started
 
@@ -27,6 +27,9 @@ tar Jxvf mvtec_anomaly_detection.tar.xz
 You can find configuration files at [configs/experiment/](configs/experiment).
 Also, we provide pretrained weights from [here](https://www.dropbox.com/sh/dut2fypgx3igpq2/AABY6y66eVZTIb4XbekjVV1Ja?dl=0).
 Please save the checkpoints at [checkpoints/](checkpoints/) directory.
+
+In default
+Before running code, sign up [wandb](https://wandb.ai/) which is experiment tracking platform.
 
 ### Training score SDE
 ```bash
