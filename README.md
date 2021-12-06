@@ -28,8 +28,7 @@ You can find configuration files at [configs/experiment/](configs/experiment).
 Also, we provide pretrained weights from [here](https://www.dropbox.com/sh/dut2fypgx3igpq2/AABY6y66eVZTIb4XbekjVV1Ja?dl=0).
 Please save the checkpoints at [checkpoints/](checkpoints/) directory.
 
-In default
-Before running code, sign up [wandb](https://wandb.ai/) which is experiment tracking platform.
+In our code, [wandb](https://wandb.ai/) is the default logger. So, before running code, please sign up wandb.
 
 ### Training score SDE
 ```bash
